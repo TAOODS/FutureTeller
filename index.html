@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线六爻起卦</title>
+    <style>
+        /* --- CSS 样式部分：负责网页长什么样 --- */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 { color: #333; }
+
+        /* 卦象显示区域 */
+        #hexagram-container {
+            width: 200px;
+            height: 300px;
+            background-color: #fff;
+            border: 2px solid #333;
+            margin: 20px;
+            padding: 10px;
+            display: flex;
+            /* 关键：让线条从下往上堆叠 */
+            flex-direction: column-reverse; 
+            justify-content: flex-start;
+            align-items: center;
+            gap: 10px; /* 线条之间的间距 */
+        }
+
+        /* 每一行（爻）的容器 */
+        .line-row {
+            width: 100%;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 阳爻样式 (一条长线) */
+        .yang {
+            width: 150px;
+            height: 100%;
+            background-color: #000;
+        }
+
+        /* 阴爻样式 (中间断开) */
+        .yin {
+            width: 150px;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+        .yin::before, .yin::after {
+            content: '';
+            width: 65px; /* 两段短线 */
+            height: 100%;
+            background-color: #000;
+            display: block;
+        }
+
+        /* 变爻（动爻）用红色标记 */
+        .moving { background-color: #c0392b !important; }
+        .moving::before, .moving::after { background-color: #c0392b !important; }
+
+        /* 按钮样式 */
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:disabled { background-color: #999; }
+
+        #status { margin-top: 10px; color: #666; }
+        #result { margin-top: 20px; font-weight: bold; color: #b71c1c;}
+    </style>
+</head>
+<body>
+
+    <h1>🪙 赛博算命：硬币六爻</h1>
+    
+    <div id="hexagram-container">
+        </div>
+
+    <button id="toss-btn" onclick="castLine()">掷出硬币 (第 1 爻)</button>
+    
+    <p id="status">请诚心默念问题，点击按钮起卦...</p>
+    <div id="result"></div>
+
+    <script>
+        /* --- JavaScript 逻辑部分：负责怎么算 --- */
+        
+        let lineCount = 0; // 记录当前掷到了第几爻 (0-6)
+        let hexagramCode = []; // 存储6次结果，例如 [8, 7, 8, 9, 7, 8]
+
+        // 核心函数：掷硬币生成一爻
+        function castLine() {
+            if (lineCount >= 6) return; // 如果已经满6爻，停止
+
+            // 1. 模拟掷3枚硬币 (2代表花/背，3代表字/面)
+            // 这里假设：花=2，字=3。
+            // 随机生成 2 或 3
+            let c1 = Math.random() > 0.5 ? 3 : 2;
+            let c2 = Math.random() > 0.5 ? 3 : 2;
+            let c3 = Math.random() > 0.5 ? 3 : 2;
+            
+            let sum = c1 + c2 + c3; // 结果只能是 6, 7, 8, 9
+            
+            // 2. 存入数据
+            hexagramCode.push(sum);
+            lineCount++;
+
+            // 3. 在屏幕上画出来
+            drawLine(sum);
+
+            // 4. 更新按钮文字
+            let btn = document.getElementById('toss-btn');
+            if (lineCount < 6) {
+                btn.innerText = `掷出硬币 (第 ${lineCount + 1} 爻)`;
+                document.getElementById('status').innerText = `本次掷出点数：${sum} (${getMeaning(sum)})`;
+            } else {
+                btn.innerText = "起卦完成";
+                btn.disabled = true; // 禁用按钮
+                interpretResult(); // 解卦
+            }
+        }
+
+        // 辅助函数：将数字含义翻译成人话
+        function getMeaning(num) {
+            if (num === 6) return "老阴 (变)";
+            if (num === 7) return "少阳";
+            if (num === 8) return "少阴";
+            if (num === 9) return "老阳 (变)";
+        }
+
+        // 辅助函数：在页面上画线条
+        function drawLine(num) {
+            const container = document.getElementById('hexagram-container');
+            const row = document.createElement('div');
+            row.className = 'line-row';
+
+            const line = document.createElement('div');
+            
+            // 判读阴阳：6和8是阴爻，7和9是阳爻
+            if (num === 6 || num === 8) {
+                line.className = 'yin';
+            } else {
+                line.className = 'yang';
+            }
+
+            // 判断动爻：6和9是变爻，加红色高亮
+            if (num === 6 || num === 9) {
+                line.classList.add('moving');
+            }
+
+            row.appendChild(line);
+            container.appendChild(row); // 因为CSS设置了 column-reverse，这里append其实是往最下面加（视觉上的第一爻）
+        }
+
+        // 核心函数：简单的解卦逻辑
+        function interpretResult() {
+            // 这里只是一个简单的演示，根据最后生成的数组来判断
+            // 真正的六爻需要查阅复杂的64卦表
+            
+            let resultText = "卦象已成！<br>";
+            resultText += `你的卦码是: [${hexagramCode.join(', ')}]<br>`;
+            resultText += "（真正的高级功能需要你连接数据库来查询这个卦码对应的详细解释）";
+            
+            document.getElementById('result').innerHTML = resultText;
+            document.getElementById('status').innerText = "天机已泄。";
+        }
+    </script>
+</body>
+</html>
